@@ -5,6 +5,8 @@
  * the shell, the quoting and the terse parsing live. What is left here is the
  * shape of each question and what its answer means.
  */
+#define _POSIX_C_SOURCE 200809L
+
 #include "wifi_nm.h"
 
 #include <stdio.h>
@@ -81,9 +83,18 @@ int wifi_nm_scan(WifiList *list, const char *device,
     list->count = 0;
 
     char command[WIFI_TEXT * 16];
-    snprintf(command, sizeof(command),
-             "%s -t -f SSID,SIGNAL,SECURITY,IN-USE device wifi list",
-             wifi_shell_program_quoted());
+    if (device && device[0]) {
+        char quoted_device[WIFI_TEXT * 4 + 8];
+        wifi_shell_quote(device, quoted_device, sizeof(quoted_device));
+        snprintf(command, sizeof(command),
+                 "%s -t -f SSID,SIGNAL,SECURITY,IN-USE device wifi list "
+                 "ifname %s",
+                 wifi_shell_program_quoted(), quoted_device);
+    } else {
+        snprintf(command, sizeof(command),
+                 "%s -t -f SSID,SIGNAL,SECURITY,IN-USE device wifi list",
+                 wifi_shell_program_quoted());
+    }
 
     /* Ask for a fresh scan and WAIT for it before reading the list.
      *
@@ -174,18 +185,21 @@ int wifi_nm_connect(const char *device, const char *ssid,
 
     char quoted_ssid[WIFI_TEXT * 4 + 8];
     wifi_shell_quote(ssid, quoted_ssid, sizeof(quoted_ssid));
+    char quoted_device[WIFI_TEXT * 4 + 8];
+    wifi_shell_quote(device, quoted_device, sizeof(quoted_device));
 
     char command[WIFI_TEXT * 16];
     if (password && password[0]) {
         char quoted_password[WIFI_TEXT * 4 + 8];
         wifi_shell_quote(password, quoted_password, sizeof(quoted_password));
         snprintf(command, sizeof(command),
-                 "%s device wifi connect %s password %s",
-                 wifi_shell_program_quoted(), quoted_ssid, quoted_password);
+                 "%s device wifi connect %s password %s ifname %s",
+                 wifi_shell_program_quoted(), quoted_ssid, quoted_password,
+                 quoted_device);
     } else {
         snprintf(command, sizeof(command),
-                 "%s device wifi connect %s",                  wifi_shell_program_quoted(),
-                 quoted_ssid);
+                 "%s device wifi connect %s ifname %s",
+                 wifi_shell_program_quoted(), quoted_ssid, quoted_device);
     }
 
     static char output[WIFI_TEXT * 8];

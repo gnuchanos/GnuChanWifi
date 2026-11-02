@@ -1,11 +1,9 @@
 /*
  * wifi_config.c — the Name = value reader.
  *
- * One setting per line: a name, an `=`, and a value. The file is `config.py`
- * under ~/.config/GnuChanWifi/, because that is the convention the rest of the
- * desktop follows — GnuChanWM and GnuChanRunner both read a `.py` file that is
- * not Python but a plain settings list — and a wifi window that named its file
- * differently would be the one program whose settings are somewhere else.
+ * One setting per line: a name, an `=`, and a value. The file is `config.conf`
+ * under ~/.config/GnuChanWifi/. Existing config.py files are only read as
+ * legacy plain-text values; they are never evaluated.
  *
  * The syntax is the whole of this reader, and it is small: a value is text,
  * and if it is wrapped in quotes those are stripped. So both of these say the
@@ -25,12 +23,29 @@
  * the file, and no flag that is not already a yes/no colour. That is the whole
  * reason this reader is a hundred lines and not a grammar.
  */
+#define _POSIX_C_SOURCE 200809L
+
 #include "wifi_config.h"
 
 #include <ctype.h>
+#include <errno.h>
+#include <limits.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <unistd.h>
+
+static void restrict_commands_for_sudo(WifiConfig *config) {
+    if (geteuid() != 0 || getuid() == 0) {
+        return;
+    }
+
+    /* The elevated copy still reads the caller's config file. */
+    snprintf(config->nmcli, sizeof(config->nmcli), "nmcli");
+    config->restart_module[0] = '\0';
+    setenv("PATH",
+           "/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin", 1);
+}
 
 /* --- the settings a machine with no file gets ----------------------------- */
 
@@ -92,6 +107,23 @@ static char *trim(char *text) {
     return text;
 }
 
+static int parse_positive_int(const char *text, int *out) {
+    char *end = NULL;
+    errno = 0;
+    long value = strtol(text, &end, 10);
+    if (end == text || errno == ERANGE || value <= 0 || value > INT_MAX) {
+        return -1;
+    }
+    while (*end && isspace((unsigned char)*end)) {
+        end++;
+    }
+    if (*end) {
+        return -1;
+    }
+    *out = (int)value;
+    return 0;
+}
+
 /* The value of a setting, with a surrounding pair of quotes stripped. The
    quotes are only removed when they match at both ends, so a value that merely
    contains one — a title like "it's" — is left exactly as written. */
@@ -127,18 +159,18 @@ static void apply_setting(WifiConfig *config, const char *name,
     } else if (strcmp(name, "FontFamily") == 0) {
         SET_TEXT(font_family);
     } else if (strcmp(name, "FontSize") == 0) {
-        int size = atoi(value);
-        if (size > 0) {
+        int size = 0;
+        if (parse_positive_int(value, &size) == 0) {
             config->font_size = size;
         }
     } else if (strcmp(name, "Width") == 0) {
-        int width = atoi(value);
-        if (width > 0) {
+        int width = 0;
+        if (parse_positive_int(value, &width) == 0) {
             config->width = width;
         }
     } else if (strcmp(name, "Rows") == 0) {
-        int rows = atoi(value);
-        if (rows > 0) {
+        int rows = 0;
+        if (parse_positive_int(value, &rows) == 0) {
             config->rows = rows;
         }
     } else if (strcmp(name, "Background") == 0) {
@@ -172,12 +204,28 @@ static void apply_setting(WifiConfig *config, const char *name,
 char *wifi_config_path(char *buffer, unsigned int size) {
     const char *xdg = getenv("XDG_CONFIG_HOME");
     if (xdg && xdg[0]) {
+        snprintf(buffer, size, "%s/GnuChanWifi/config.conf", xdg);
+        if (access(buffer, R_OK) == 0) {
+            return buffer;
+        }
         snprintf(buffer, size, "%s/GnuChanWifi/config.py", xdg);
+        if (access(buffer, R_OK) == 0) {
+            return buffer;
+        }
+        snprintf(buffer, size, "%s/GnuChanWifi/config.conf", xdg);
         return buffer;
     }
     const char *home = getenv("HOME");
     if (home && home[0]) {
+        snprintf(buffer, size, "%s/.config/GnuChanWifi/config.conf", home);
+        if (access(buffer, R_OK) == 0) {
+            return buffer;
+        }
         snprintf(buffer, size, "%s/.config/GnuChanWifi/config.py", home);
+        if (access(buffer, R_OK) == 0) {
+            return buffer;
+        }
+        snprintf(buffer, size, "%s/.config/GnuChanWifi/config.conf", home);
         return buffer;
     }
     /* No home and no XDG directory: there is nowhere to look, and the caller
@@ -191,6 +239,7 @@ int wifi_config_load(WifiConfig *config, const char *path) {
        names. That is what lets a file name one colour and keep the rest of the
        desktop it expects. */
     wifi_config_defaults(config);
+    restrict_commands_for_sudo(config);
 
     if (!path || !path[0]) {
         snprintf(config->error, sizeof(config->error),
@@ -266,5 +315,6 @@ int wifi_config_load(WifiConfig *config, const char *path) {
         snprintf(config->title, sizeof(config->title), "Wi-Fi");
     }
 
+    restrict_commands_for_sudo(config);
     return 0;
 }

@@ -16,7 +16,12 @@ The makefile installs the build dependencies with apt-get, compiles the sources,
 and re-runs itself through sudo to write into `/usr/local/bin`. The binary goes
 to `/usr/local/bin/GnuChanWifi`; a desktop entry is written to
 `/usr/share/applications/gnuchanwifi.desktop`, which is what makes the manager
-appear in the launcher; the settings file goes under `~/.config/GnuChanWifi/`.
+appear in the launcher; the settings file is
+`~/.config/GnuChanWifi/config.conf`. It uses plain `Key = value` lines.
+Existing `config.py` files remain readable as legacy text and are never run as
+Python.
+When launched through `sudo`, `NmcliPath` and `RestartModule` are replaced
+with their system defaults before network operations run.
 
 The makefile takes an action as its first argument: `install` (the default),
 `build`, `run`, `list` and `uninstall`. `list` compiles and prints the networks

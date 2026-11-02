@@ -2,17 +2,15 @@
  * wifi_config.h — the settings the wifi manager is built from.
  *
  * The file is a plain list of `Name = value` lines, one per line, with `#`
- * starting a comment. It is deliberately NOT the small Python subset the
- * launcher and the window manager read: a wifi manager has a dozen settings and
- * no calls, and a person opening the file to change a colour should see a list
- * of settings rather than a grammar. The reader in wifi_config.c is therefore a
- * few lines long and a person can keep all of it in their head.
+ * starting a comment. A person opening the file to change a colour sees a list
+ * of settings rather than a grammar. Old config.py files with the same
+ * Key = value shape are read as plain text and are never evaluated.
  *
  * Everything here is plain data — colours as NAMES, because a name is what a
  * file can hold without a display. Only code with a connection to the server
  * turns a name into a pixel, and that is wifi_style.c.
  *
- *     ~/.config/GnuChanWifi/config.py
+ *     ~/.config/GnuChanWifi/config.conf
  *
  *     NmcliPath   = "nmcli"
  *     FontFamily  = "monospace"
@@ -86,8 +84,9 @@ void wifi_config_defaults(WifiConfig *config);
    use. */
 int wifi_config_load(WifiConfig *config, const char *path);
 
-/* Where the file is looked for: $XDG_CONFIG_HOME/GnuChanWifi/config.py, or
-   ~/.config/GnuChanWifi/config.py. Written into buffer, which is returned. */
+/* Where the file is looked for: $XDG_CONFIG_HOME/GnuChanWifi/config.conf, or
+   ~/.config/GnuChanWifi/config.conf. A legacy config.py is read when no .conf
+   exists. Written into buffer, which is returned. */
 char *wifi_config_path(char *buffer, unsigned int size);
 
 #endif /* GNUCHANWIFI_CONFIG_H */

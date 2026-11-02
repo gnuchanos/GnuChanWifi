@@ -5,7 +5,7 @@
 #     python3 makefile.py
 #
 # Builds the manager and installs it to /usr/local/bin, with its settings file
-# put where it will be read from — ~/.config/GnuChanWifi/config.py. It needs
+# put where it will be read from — ~/.config/GnuChanWifi/config.conf. It needs
 # root for the install and re-runs itself through sudo, exactly as GnuChanWM's
 # and GnuChanRunner's own makefiles do.
 #
@@ -66,9 +66,9 @@ DESKTOP_FILE = APPS_DIR / "gnuchanwifi.desktop"
 # The settings file, installed into the user's own config directory. The manager
 # reads it from there, so a machine that never had one gets the shipped defaults
 # written where it looks for them.
-CONFIG_SOURCE = ROOT / "GnuChanWifi_config" / "config.py"
+CONFIG_SOURCE = ROOT / "GnuChanWifi_config" / "config.conf"
 CONFIG_DIR_NAME = "GnuChanWifi"
-CONFIG_FILE_NAME = "config.py"
+CONFIG_FILE_NAME = "config.conf"
 
 SOURCES = (
     "wifi_shell.c",
@@ -372,6 +372,16 @@ def install_config() -> None:
             os.chown(directory, uid, gid)
         except OSError:
             pass
+        return
+    legacy_target = directory / "config.py"
+    if legacy_target.exists():
+        shutil.copyfile(legacy_target, target)
+        try:
+            os.chown(directory, uid, gid)
+            os.chown(target, uid, gid)
+        except OSError:
+            pass
+        detail(f"copied legacy plain-text settings to {target}")
         return
 
     shutil.copyfile(CONFIG_SOURCE, target)
