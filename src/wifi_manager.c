@@ -31,7 +31,7 @@
 #include "wifi_ui.h"
 #include "gnuchan_lang.h"
 
-#define GNUCHANWIFI_VERSION "0.1.0"
+#define GNUCHANWIFI_VERSION "0.1.2"
 
 /* Print the wireless state and every network in range, as text. */
 static int list_networks(const char *config_path) {
