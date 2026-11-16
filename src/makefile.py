@@ -66,7 +66,7 @@ DESKTOP_FILE = APPS_DIR / "gnuchanwifi.desktop"
 # The settings file, installed into the user's own config directory. The manager
 # reads it from there, so a machine that never had one gets the shipped defaults
 # written where it looks for them.
-CONFIG_SOURCE = ROOT / "GnuChanWifi_config" / "config.conf"
+CONFIG_SOURCE = ROOT / "config" / "config.conf"
 CONFIG_DIR_NAME = "GnuChanWifi"
 CONFIG_FILE_NAME = "config.conf"
 
@@ -282,7 +282,7 @@ def desktop_entry() -> str:
     return "\n".join([
         "[Desktop Entry]",
         "Type=Application",
-        "Name=GnuChanWifi",
+        "Name=GnuChan Wi-Fi",
         "Comment=GnuchanOS wifi manager",
         f"Exec={BIN_DIR / PROGRAM}",
         f"TryExec={BIN_DIR / PROGRAM}",

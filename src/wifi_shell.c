@@ -58,7 +58,13 @@ int wifi_shell_run(const char *command, char *out, unsigned int size) {
     /* Room for the longest command a caller can build, plus the " 2>&1" added
        below, so the command that reaches the shell is the whole command. */
     char line[WIFI_TEXT * 20];
-    snprintf(line, sizeof(line), "%s 2>&1", command);
+    int wrote = snprintf(line, sizeof(line), "%s 2>&1", command);
+    if (wrote < 0 || (size_t)wrote >= sizeof(line)) {
+        if (size) {
+            out[0] = '\0';
+        }
+        return 127;
+    }
 
     FILE *pipe = popen(line, "r");
     if (!pipe) {

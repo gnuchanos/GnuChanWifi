@@ -271,7 +271,7 @@ int wifi_login_prompt(const WifiConfig *config, char *password,
                                   (unsigned)DefaultDepth(dialog.display,
                                                          dialog.screen));
 
-    XStoreName(dialog.display, dialog.window, "GnuChanWifi — authentication");
+    XStoreName(dialog.display, dialog.window, "GnuChan Wi-Fi — authentication");
 
     XMapRaised(dialog.display, dialog.window);
     XSetInputFocus(dialog.display, dialog.window, RevertToParent, CurrentTime);
